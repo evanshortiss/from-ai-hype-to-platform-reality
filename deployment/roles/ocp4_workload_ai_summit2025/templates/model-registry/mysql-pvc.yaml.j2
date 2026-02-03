@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-registry-db
+  namespace: model-registry-db
+  labels:
+    app.kubernetes.io/name: model-registry-db
+    app.kubernetes.io/instance: model-registry-db
+    app.kubernetes.io/part-of: model-registry-db
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+

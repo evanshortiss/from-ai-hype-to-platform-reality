@@ -1,0 +1,32 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-support-ui
+  title: Customer Support UI
+  description: Web-based user interface for customer support interactions. Provides a modern chat interface for customers to submit inquiries and receive AI-powered assistance. Messages are published to the intake topic for processing by the AI customer service platform.
+  tags:
+    - nodejs
+    - frontend
+    - ui
+    - kafka
+    - customer-support
+    - chat-interface
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/customer-support-ui
+    app.openshift.io/runtime: nodejs
+    kubernetes.io/deployment: customer-support-ui
+    kubernetes.io/namespace: parasol-ai
+spec:
+  type: website
+  lifecycle: production
+  owner: support-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+    - resource:kafka-topic-intake
+  providesApis: []
+  consumesApis: []
+  links:
+    - url: https://customer-support.parasol.example.com
+      title: Customer Support Portal
+      icon: web

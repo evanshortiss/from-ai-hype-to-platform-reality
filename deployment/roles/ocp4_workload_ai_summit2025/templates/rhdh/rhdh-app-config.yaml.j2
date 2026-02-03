@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rhdh-app-config
+  namespace: ai-rhdh
+  labels:
+    rhdh.redhat.com/ext-config-sync: "true"
+  annotations:
+    rhdh.redhat.com/backstage-name: developer-hub
+data:
+  app-config.yaml: |
+    app:
+      title: AI RHDH
+      baseUrl: https://backstage-developer-hub-ai-rhdh.{{ r_openshift_subdomain }}
+
+    signInPage: github
+    auth:
+      environment: production
+      providers:
+        github:
+          production:
+            clientId: {{ github_client_id }}
+            clientSecret: {{ github_client_secret }}
+
+    backend:
+      baseUrl: https://backstage-developer-hub-ai-rhdh.{{ r_openshift_subdomain }}
+      cors:
+        origin: https://backstage-developer-hub-ai-rhdh.{{ r_openshift_subdomain }}
+      csp:
+        connect-src:
+          - "'self'"
+          - 'http:'
+          - 'https:'
+        img-src:
+          - "'self'"
+          - 'data:'
+          - 'https://avatars.githubusercontent.com'
+      auth:
+        externalAccess:
+          - type: static
+            options:
+              token: jHYtxs7CavUaxoI+Rm+Ri6dZm8vf76vp
+              subject: agents
+
+    integrations:
+      github:
+        - host: github.com
+          apps:
+            - appId: {{ github_app_id }}
+              clientId: {{ github_client_id }}
+              clientSecret: {{ github_client_secret }}
+              privateKey: |
+{{ github_private_key | indent(16, first=True) }}
+              webhookSecret: none
+
+    argocd:
+      appLocatorMethods:
+        - type: 'config'
+          instances:
+            - name: main
+              url: ${ARGOCD_HOST}
+              username: admin
+              password: ${ARGOCD_PASSWORD}
+
+    kubernetes:
+      serviceLocatorMethod:
+        type: multiTenant
+      clusterLocatorMethods:
+        - type: 'config'
+          clusters:
+            - name: dev-cluster
+              url: {{ r_openshift_api_server }}
+              authProvider: serviceAccount
+              skipTLSVerify: true
+              serviceAccountToken: ${KUBERNETES_SA_TOKEN}
+
+    catalog:
+      rules:
+        - allow: [Component, API, Location, Template, System, Domain, User, Group, Resource]
+      locations:
+        - type: url
+          target: https://github.com/redhat-ai-dev/ai-lab-template/blob/release-v0.11.x/all.yaml
+          rules:
+            - allow: [Template]
+        - type: url
+          target: https://github.com/{{ github_organization }}/from-ai-hype-to-platform-reality/blob/main/templates/langchain-agent-python/template.yaml
+          rules:
+            - allow: [Template]
+        - type: url
+          target: https://github.com/{{ github_organization }}/from-ai-hype-to-platform-reality/blob/main/catalog/catalog-info.yaml
+          rules:
+            - allow: [System, Domain, Group, User, Resource, Component, API, Location, Template]
+      providers:
+        github:
+          providerId:
+            catalogPath: /catalog-info.yaml
+            organization: {{ github_organization }}
+            schedule:
+              frequency: { minutes: 5 }
+              initialDelay: { seconds: 15 }
+              timeout: { minutes: 3 }
+        githubOrg:
+          githubUrl: 'https://github.com'
+          id: production
+          orgs:
+            - {{ github_organization }}
+          schedule:
+            frequency: { minutes: 5 }
+            initialDelay: { seconds: 15 }
+            timeout: { minutes: 3 }
+        modelCatalog:
+          development:
+            baseUrl: http://localhost:9090
+

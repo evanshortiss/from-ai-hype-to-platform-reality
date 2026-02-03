@@ -1,0 +1,14 @@
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: customer-service
+  title: Customer Service Operations
+  description: Domain encompassing all customer service operations including AI-powered assistance, routing, and data management
+  tags:
+    - customer-service
+    - ai
+    - support
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality
+spec:
+  owner: platform-engineering 

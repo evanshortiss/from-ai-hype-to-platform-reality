@@ -1,0 +1,62 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-message-broker
+  title: Kafka Message Broker
+  description: Apache Kafka message broker for event-driven communication between services
+  tags:
+    - messaging
+    - kafka
+    - event-streaming
+spec:
+  type: message-broker
+  owner: platform-engineering
+  system: ai-customer-service-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: postgresql-database
+  title: PostgreSQL Database
+  description: PostgreSQL database for storing customer data and financial records
+  tags:
+    - database
+    - postgresql
+    - persistence
+spec:
+  type: database
+  owner: platform-engineering
+  system: ai-customer-service-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: openai-service
+  title: OpenAI API Service
+  description: OpenAI API for AI-powered chat, moderation, and language processing
+  tags:
+    - ai
+    - openai
+    - llm
+    - external-service
+spec:
+  type: api
+  owner: platform-engineering
+  system: ai-customer-service-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: milvus-vector-database
+  title: Milvus Vector Database
+  description: Milvus vector database for storing and querying document embeddings
+  tags:
+    - vector-database
+    - milvus
+    - embeddings
+    - ai
+spec:
+  type: database
+  owner: platform-engineering
+  system: ai-customer-service-platform 

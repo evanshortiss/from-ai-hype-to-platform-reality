@@ -1,0 +1,65 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ ocp4_workload_ai_summit2025_amq_streams_application_name }}
+  namespace: {{ ocp4_workload_ai_summit2025_amq_streams_application_namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  destination:
+    name: ""
+    namespace: {{ ocp4_workload_ai_summit2025_amq_streams_namespace }}
+    server: 'https://kubernetes.default.svc'
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
+      limit: 10
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  source:
+    repoURL: {{ ocp4_workload_ai_summit2025_amq_streams_gitops_repo }}
+    targetRevision: {{ ocp4_workload_ai_summit2025_amq_streams_gitops_repo_tag }}
+    path: {{ ocp4_workload_ai_summit2025_amq_streams_gitops_repo_path }}
+    helm:
+      valuesObject:
+        amq-streams-operator-install: {{ ocp4_workload_ai_summit2025_amq_streams_operator_install }}
+        kafka-broker:
+          namespace: {{ ocp4_workload_ai_summit2025_amq_streams_broker_namespace }}
+          nameOverride: {{ ocp4_workload_ai_summit2025_amq_streams_broker_name }}
+          kafka:
+            listener:
+              external:
+                tls:
+                  secret:
+                    key:
+                      crt: tls.crt
+                      key: tls.key
+                    value:
+                      crt: {{ ocp4_workload_ai_summit2025_openshift_ingress_cert }}
+                      key: {{ ocp4_workload_ai_summit2025_openshift_ingress_key }}
+          authentication:
+            clientId: {{ ocp4_workload_ai_summit2025_amq_streams_client_id }}
+            clientSecret: {{ ocp4_workload_ai_summit2025_amq_streams_client_secret }}
+            securityProtocol: {{ ocp4_workload_ai_summit2025_amq_streams_security_protocol }}
+            saslMechanism: {{ ocp4_workload_ai_summit2025_amq_streams_sasl_mechanism }}
+        amq-streams-console:
+          namespace: {{ ocp4_workload_ai_summit2025_amq_streams_broker_namespace }}
+          subdomain: {{ r_openshift_subdomain }}
+          kafka:
+            name: {{ ocp4_workload_ai_summit2025_amq_streams_broker_name }}
+            authentication:
+              saslMechanism: {{ ocp4_workload_ai_summit2025_amq_streams_sasl_mechanism }}
+              securityProtocol: {{ ocp4_workload_ai_summit2025_amq_streams_security_protocol }}
+            authorization: simple
+        kafka-topics:
+          kafka:
+            namespace: {{ ocp4_workload_ai_summit2025_amq_streams_broker_namespace }}
+            cluster: {{ ocp4_workload_ai_summit2025_amq_streams_broker_name }}

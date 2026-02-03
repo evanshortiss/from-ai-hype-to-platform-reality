@@ -1,0 +1,403 @@
+---
+
+- name: Install Red Hat Developer Hub operator
+  ansible.builtin.include_role:
+    name: install_operator
+  when: ocp4_workload_ai_summit2025_rhdh_operator_install | default(true) | bool
+  vars:
+    install_operator_action: install
+    install_operator_name: "{{ ocp4_workload_ai_summit2025_rhdh_operator_name }}"
+    install_operator_namespace: "{{ ocp4_workload_ai_summit2025_rhdh_operator_namespace }}"
+    install_operator_channel: "{{ ocp4_workload_ai_summit2025_rhdh_operator_channel }}"
+    install_operator_catalog: "{{ ocp4_workload_ai_summit2025_rhdh_operator_catalog }}"
+    install_operator_automatic_install_plan_approval: true
+    install_operator_csv_nameprefix: rhdh-operator
+
+- name: Read GitHub App private key from file
+  ansible.builtin.set_fact:
+    github_private_key: "{{ lookup('file', github_private_key_file) }}"
+  when: github_private_key_file is defined and github_private_key_file | length > 0
+
+- name: Get ArgoCD admin password from openshift-gitops
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: openshift-gitops-cluster
+    namespace: openshift-gitops
+  register: r_argocd_secret
+  retries: 30
+  delay: 10
+  until:
+    - r_argocd_secret.resources is defined
+    - r_argocd_secret.resources | length > 0
+
+- name: Set ArgoCD password fact
+  ansible.builtin.set_fact:
+    argocd_password: "{{ r_argocd_secret.resources[0].data['admin.password'] | b64decode }}"
+
+- name: Get ArgoCD route
+  kubernetes.core.k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: openshift-gitops-server
+    namespace: openshift-gitops
+  register: r_argocd_route
+  retries: 30
+  delay: 10
+  until:
+    - r_argocd_route.resources is defined
+    - r_argocd_route.resources | length > 0
+
+- name: Set ArgoCD host fact
+  ansible.builtin.set_fact:
+    argocd_host: "https://{{ r_argocd_route.resources[0].spec.host }}"
+
+- name: Create ai-rhdh namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: ai-rhdh
+
+- name: Create RHOAI connector service account
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: rhdh-rhoai-connector
+        namespace: ai-rhdh
+
+- name: Create RHOAI connector ClusterRole
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: rhdh-rhoai-connector
+        annotations:
+          argocd.argoproj.io/sync-wave: "0"
+      rules:
+        - apiGroups:
+            - apiextensions.k8s.io
+          resources:
+            - customresourcedefinitions
+          verbs:
+            - get
+        - apiGroups:
+            - route.openshift.io
+          resources:
+            - routes
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups:
+            - ""
+          resources:
+            - serviceaccounts
+            - services
+          verbs:
+            - get
+            - list
+            - watch
+        - apiGroups:
+            - serving.kserve.io
+          resources:
+            - inferenceservices
+          verbs:
+            - get
+            - list
+            - watch
+
+- name: Create RHOAI connector ClusterRoleBinding
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: rhdh-rhoai-connector
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: rhdh-rhoai-connector
+      subjects:
+        - kind: ServiceAccount
+          name: rhdh-rhoai-connector
+          namespace: ai-rhdh
+
+- name: Create RHOAI connector Role in ai-rhdh namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: rhdh-rhoai-connector
+        namespace: ai-rhdh
+      rules:
+        - apiGroups:
+            - ""
+          resources:
+            - configmaps
+          verbs:
+            - get
+            - list
+            - watch
+            - create
+            - update
+            - patch
+
+- name: Create RHOAI connector RoleBinding in ai-rhdh namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: rhdh-rhoai-connector
+        namespace: ai-rhdh
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: rhdh-rhoai-connector
+      subjects:
+        - kind: ServiceAccount
+          name: rhdh-rhoai-connector
+          namespace: ai-rhdh
+
+- name: Create RHOAI dashboard permissions RoleBinding
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: rhdh-rhoai-dashboard-permissions
+        namespace: rhoai-model-registries
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: Role
+        name: registry-user-modelregistry-public
+      subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: Group
+          name: system:serviceaccounts:ai-rhdh
+
+- name: Create RHOAI connector service account token secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: rhdh-rhoai-connector-token
+        namespace: ai-rhdh
+        annotations:
+          kubernetes.io/service-account.name: rhdh-rhoai-connector
+      type: kubernetes.io/service-account-token
+
+- name: Wait for RHOAI connector token to be generated
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: rhdh-rhoai-connector-token
+    namespace: ai-rhdh
+  register: r_rhoai_token_secret
+  retries: 30
+  delay: 2
+  until:
+    - r_rhoai_token_secret.resources is defined
+    - r_rhoai_token_secret.resources | length > 0
+    - r_rhoai_token_secret.resources[0].data.token is defined
+
+- name: Create dynamic-plugins-root PVC
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'rhdh/dynamic-plugins-root-pvc.yaml.j2') | from_yaml }}"
+
+- name: Create rhdh-app-config ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'rhdh/rhdh-app-config.yaml.j2') | from_yaml }}"
+
+- name: Create dynamic-plugins-rhdh ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'rhdh/dynamic-plugins-rhdh.yaml.j2') | from_yaml }}"
+
+- name: Create ArgoCD credentials secret
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: rhdh-argocd-credentials
+        namespace: ai-rhdh
+      type: Opaque
+      stringData:
+        ARGOCD_HOST: "{{ argocd_host }}"
+        ARGOCD_PASSWORD: "{{ argocd_password }}"
+
+- name: Create Kubernetes service account for RHDH
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: rhdh-kubernetes-plugin
+        namespace: ai-rhdh
+
+- name: Create ClusterRole for RHDH Kubernetes plugin
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: rhdh-kubernetes-plugin
+      rules:
+        - apiGroups:
+            - '*'
+          resources:
+            - pods
+            - pods/log
+            - services
+            - configmaps
+            - deployments
+            - replicasets
+            - horizontalpodautoscalers
+            - ingresses
+            - statefulsets
+            - daemonsets
+            - jobs
+            - cronjobs
+            - resourcequotas
+            - limitranges
+          verbs:
+            - get
+            - list
+            - watch
+
+- name: Create ClusterRoleBinding for RHDH Kubernetes plugin
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: rhdh-kubernetes-plugin
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: rhdh-kubernetes-plugin
+      subjects:
+        - kind: ServiceAccount
+          name: rhdh-kubernetes-plugin
+          namespace: ai-rhdh
+
+- name: Create token secret for service account
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: rhdh-kubernetes-plugin-token
+        namespace: ai-rhdh
+        annotations:
+          kubernetes.io/service-account.name: rhdh-kubernetes-plugin
+      type: kubernetes.io/service-account-token
+
+- name: Wait for token to be generated
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Secret
+    name: rhdh-kubernetes-plugin-token
+    namespace: ai-rhdh
+  register: r_sa_token_secret
+  retries: 30
+  delay: 2
+  until:
+    - r_sa_token_secret.resources is defined
+    - r_sa_token_secret.resources | length > 0
+    - r_sa_token_secret.resources[0].data.token is defined
+
+- name: Set Kubernetes SA token fact
+  ansible.builtin.set_fact:
+    kubernetes_sa_token: "{{ r_sa_token_secret.resources[0].data.token | b64decode }}"
+
+- name: Create Kubernetes SA token secret for Backstage
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: kubernetes-sa-token
+        namespace: ai-rhdh
+      type: Opaque
+      stringData:
+        KUBERNETES_SA_TOKEN: "{{ kubernetes_sa_token }}"
+
+- name: Create Backstage CR
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'rhdh/backstage.yaml.j2') | from_yaml }}"
+  retries: 10
+  delay: 30
+  ignore_errors: true
+  register: backstage_result
+  until: backstage_result is not failed
+
+- name: Print Backstage CR creation result
+  ansible.builtin.debug:
+    var: backstage_result
+
+- name: Wait for Backstage deployment to be ready
+  kubernetes.core.k8s_info:
+    api_version: rhdh.redhat.com/v1alpha4
+    kind: Backstage
+    name: developer-hub
+    namespace: ai-rhdh
+  register: r_backstage
+  retries: 60
+  delay: 10
+  until:
+    - r_backstage.resources is defined
+    - r_backstage.resources | length > 0
+    - r_backstage.resources[0].status is defined
+    - r_backstage.resources[0].status.conditions is defined
+    - r_backstage.resources[0].status.conditions | selectattr('type', 'equalto', 'Deployed') | selectattr('status', 'equalto', 'True') | list | length > 0
+  ignore_errors: true
+
+- name: Print Backstage deployment status
+  ansible.builtin.debug:
+    msg: "Red Hat Developer Hub deployed successfully"
+
+- name: Reminder to update GitHub App callback URL
+  ansible.builtin.debug:
+    msg:
+      - "==============================================================================="
+      - "IMPORTANT: Update your GitHub App Callback URL"
+      - "==============================================================================="
+      - ""
+      - "Before users can log in, update your GitHub App's callback URL to:"
+      - "https://backstage-developer-hub-ai-rhdh.{{ r_openshift_subdomain }}/api/auth/github/handler/frame"
+      - ""
+      - "Steps:"
+      - "1. Go to: https://github.com/organizations/{{ github_organization }}/settings/apps"
+      - "2. Select your GitHub App"
+      - "3. Update the 'Callback URL' field with the URL above"
+      - "4. Click 'Save changes'"
+      - ""
+      - "Without this, GitHub authentication will fail!"
+      - "==============================================================================="
+

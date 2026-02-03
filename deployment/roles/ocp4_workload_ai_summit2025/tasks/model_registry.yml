@@ -1,0 +1,87 @@
+---
+
+- name: Create model-registry-db namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: model-registry-db
+
+- name: Create MySQL Secret
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/mysql-secret.yaml.j2') | from_yaml }}"
+
+- name: Create MySQL PVC
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/mysql-pvc.yaml.j2') | from_yaml }}"
+
+- name: Create MySQL Service
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/mysql-service.yaml.j2') | from_yaml }}"
+
+- name: Create MySQL Deployment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/mysql-deployment.yaml.j2') | from_yaml }}"
+
+- name: Wait for MySQL to be ready
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: model-registry-db
+    namespace: model-registry-db
+  register: r_mysql_deployment
+  retries: 30
+  delay: 10
+  until:
+    - r_mysql_deployment.resources is defined
+    - r_mysql_deployment.resources | length > 0
+    - r_mysql_deployment.resources[0].status is defined
+    - r_mysql_deployment.resources[0].status.availableReplicas is defined
+    - r_mysql_deployment.resources[0].status.availableReplicas == 1
+
+- name: Create ModelRegistry password secret
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/modelregistry-secret.yaml.j2') | from_yaml }}"
+
+- name: Create ModelRegistry CR
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'model-registry/modelregistry.yaml.j2') | from_yaml }}"
+  retries: 10
+  delay: 30
+  ignore_errors: true
+  register: modelregistry_result
+  until: modelregistry_result is not failed
+
+- name: Print ModelRegistry creation result
+  ansible.builtin.debug:
+    var: modelregistry_result
+
+- name: Wait for ModelRegistry to be ready
+  kubernetes.core.k8s_info:
+    api_version: modelregistry.opendatahub.io/v1beta1
+    kind: ModelRegistry
+    name: my-registry
+    namespace: rhoai-model-registries
+  register: r_modelregistry
+  retries: 60
+  delay: 10
+  until:
+    - r_modelregistry.resources is defined
+    - r_modelregistry.resources | length > 0
+    - r_modelregistry.resources[0].status is defined
+    - r_modelregistry.resources[0].status.conditions is defined
+    - r_modelregistry.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | selectattr('status', 'equalto', 'True') | list | length > 0
+  ignore_errors: true
+
+- name: Print ModelRegistry status
+  ansible.builtin.debug:
+    msg: "Model Registry deployed successfully"
+

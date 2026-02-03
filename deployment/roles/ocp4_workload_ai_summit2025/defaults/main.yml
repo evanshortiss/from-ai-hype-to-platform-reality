@@ -1,0 +1,248 @@
+become_override: false
+ocp_username: opentlc-mgr
+silent: false
+guid: smt
+num_users: 5
+
+ocp4_workload_ai_summit2025_openshift_ingress_secret_certs: "{{ openshift_ingress_secret_certs_secret }}"
+
+# ------------------------------------------------
+# OpenShift Gitops
+# ------------------------------------------------
+
+ocp4_workload_ai_summit2025_openshift_gitops_operator_install: "{{ openshift_gitops_operator_install }}"
+ocp4_workload_ai_summit2025_openshift_gitops_operator_channel: latest
+ocp4_workload_ai_summit2025_openshift_gitops_operator_automatic_install_plan_approval: true
+ocp4_workload_ai_summit2025_openshift_gitops_operator_starting_csv: ""
+ocp4_workload_ai_summit2025_openshift_gitops_operator_name: openshift-gitops-operator
+ocp4_workload_ai_summit2025_openshift_gitops_operator_namespace: openshift-operators
+ocp4_workload_ai_summit2025_openshift_gitops_operator_catalog: redhat-operators
+ocp4_workload_ai_summit2025_openshift_gitops_operator_use_catalog_snapshot: false
+ocp4_workload_ai_summit2025_openshift_gitops_operator_catalogsource_name: ""
+ocp4_workload_ai_summit2025_openshift_gitops_operator_catalogsource_namespace: openshift-operators
+ocp4_workload_ai_summit2025_openshift_gitops_operator_catalog_snapshot_image: ""
+ocp4_workload_ai_summit2025_openshift_gitops_operator_catalog_snapshot_image_tag: ""
+
+ocp4_workload_ai_summit2025_openshift_gitops_setup_cluster_admin: true
+
+ocp4_workload_ai_summit2025_openshift_gitops_enable_route: true
+ocp4_workload_ai_summit2025_openshift_gitops_update_route_tls: true
+
+ocp4_workload_ai_summit2025_openshift_gitops_update_resources: true
+
+# ApplicationSet Controller
+ocp4_workload_ai_summit2025_openshift_gitops_applicationset_controller_update: false
+ocp4_workload_ai_summit2025_openshift_gitops_applicationset_controller_requests_cpu: 250m
+ocp4_workload_ai_summit2025_openshift_gitops_applicationset_controller_requests_memory: 512Mi
+ocp4_workload_ai_summit2025_openshift_gitops_applicationset_controller_limits_cpu: "2"
+ocp4_workload_ai_summit2025_openshift_gitops_applicationset_controller_limits_memory: 1Gi
+
+# Application Controller
+ocp4_workload_ai_summit2025_openshift_gitops_controller_update: true
+ocp4_workload_ai_summit2025_openshift_gitops_controller_requests_cpu: 512m
+ocp4_workload_ai_summit2025_openshift_gitops_controller_requests_memory: 1Gi
+ocp4_workload_ai_summit2025_openshift_gitops_controller_limits_cpu: "4"
+ocp4_workload_ai_summit2025_openshift_gitops_controller_limits_memory: 4Gi
+# Setting a default value for reconcile timeout as it needs to be configurable
+# Reduce this value if you want to sync more frequently
+ocp4_workload_ai_summit2025_openshift_gitops_controller_app_sync: 3m
+
+ocp4_workload_ai_summit2025_openshift_gitops_controller_remove_memory_limits: false
+
+# Redis
+ocp4_workload_ai_summit2025_openshift_gitops_redis_update: false
+ocp4_workload_ai_summit2025_openshift_gitops_redis_requests_cpu: 250m
+ocp4_workload_ai_summit2025_openshift_gitops_redis_requests_memory: 128Mi
+ocp4_workload_ai_summit2025_openshift_gitops_redis_limits_cpu: 500m
+ocp4_workload_ai_summit2025_openshift_gitops_redis_limits_memory: 256Mi
+
+# Repo Server
+ocp4_workload_ai_summit2025_openshift_gitops_repo_update: true
+ocp4_workload_ai_summit2025_openshift_gitops_repo_requests_cpu: 500m
+ocp4_workload_ai_summit2025_openshift_gitops_repo_requests_memory: 512Mi
+ocp4_workload_ai_summit2025_openshift_gitops_repo_limits_cpu: "2"
+ocp4_workload_ai_summit2025_openshift_gitops_repo_limits_memory: 2Gi
+
+# DEX
+ocp4_workload_ai_summit2025_openshift_gitops_dex_update: false
+ocp4_workload_ai_summit2025_openshift_gitops_dex_requests_cpu: 125m
+ocp4_workload_ai_summit2025_openshift_gitops_dex_requests_memory: 128Mi
+ocp4_workload_ai_summit2025_openshift_gitops_dex_limits_cpu: 500m
+ocp4_workload_ai_summit2025_openshift_gitops_dex_limits_memory: 256Mi
+
+# Server
+ocp4_workload_ai_summit2025_openshift_gitops_server_update: false
+ocp4_workload_ai_summit2025_openshift_gitops_server_requests_cpu: 250m
+ocp4_workload_ai_summit2025_openshift_gitops_server_requests_memory: 128Mi
+ocp4_workload_ai_summit2025_openshift_gitops_server_limits_cpu: 500m
+ocp4_workload_ai_summit2025_openshift_gitops_server_limits_memory: 256Mi
+
+ocp4_workload_ai_summit2025_openshift_gitops_resource_customizations: |
+  operators.coreos.com/Subscription:
+    health.lua: |
+      health_status = {}
+      if obj.status ~= nil then
+        if obj.status.conditions ~= nil then
+          numDegraded = 0
+          numPending = 0
+          msg = ""
+          for i, condition in pairs(obj.status.conditions) do
+            msg = msg .. i .. ": " .. condition.type .. " | " .. condition.status .. "\n"
+            if condition.type == "InstallPlanPending" and condition.status == "True" then
+              numPending = numPending + 1
+            elseif (condition.type == "InstallPlanMissing" and condition.reason ~= "ReferencedInstallPlanNotFound") then
+              numDegraded = numDegraded + 1
+            elseif (condition.type == "CatalogSourcesUnhealthy" or condition.type == "InstallPlanFailed") and condition.status == "True" then
+              numDegraded = numDegraded + 1
+            end
+          end
+          if numDegraded == 0 and numPending == 0 then
+            health_status.status = "Healthy"
+            health_status.message = msg
+            return health_status
+          elseif numPending > 0 and numDegraded == 0 then
+            health_status.status = "Progressing"
+            health_status.message = "An install plan for a subscription is pending installation"
+            return health_status
+          else
+            health_status.status = "Degraded"
+            health_status.message = msg
+            return health_status
+          end
+        end
+      end
+      health_status.status = "Progressing"
+      health_status.message = "An install plan for a subscription is pending installation"
+      return health_status
+
+# e.g.
+# openshift_gitops_resource_customizations: |
+  # argoproj.io/Application:
+  #   health.lua: |
+  #     hs = {}
+  #     hs.status = "Progressing"
+  #     hs.message = ""
+  #     if obj.status ~= nil then
+  #       if obj.status.health ~= nil then
+  #         hs.status = obj.status.health.status
+  #         hs.message = obj.status.health.message
+  #       end
+  #     end
+  #     return hs
+
+ocp4_workload_ai_summit2025_openshift_gitops_ignore_differences: {}
+
+# ------------------------------------------------
+# AMQ Streams
+# ------------------------------------------------
+
+ocp4_workload_ai_summit2025_amq_streams_operator_install: "{{ amq_streams_operator_install | default(true) | bool}}"
+ocp4_workload_ai_summit2025_amq_streams_application_namespace: openshift-gitops
+ocp4_workload_ai_summit2025_amq_streams_application_name: amq-streams
+ocp4_workload_ai_summit2025_amq_streams_namespace: kafka
+ocp4_workload_ai_summit2025_amq_streams_gitops_repo: https://github.com/evanshortiss/helm-summit-2025-ai.git
+ocp4_workload_ai_summit2025_amq_streams_gitops_repo_tag: main
+ocp4_workload_ai_summit2025_amq_streams_gitops_repo_path: amq-streams
+
+ocp4_workload_ai_summit2025_amq_streams_broker_namespace: kafka
+ocp4_workload_ai_summit2025_amq_streams_broker_name: kafka
+ocp4_workload_ai_summit2025_amq_streams_security_protocol: SASL_PLAINTEXT
+ocp4_workload_ai_summit2025_amq_streams_sasl_mechanism: SCRAM-SHA-512
+ocp4_workload_ai_summit2025_amq_streams_client_id: parasol
+ocp4_workload_ai_summit2025_amq_streams_client_secret: parasol
+
+# ------------------------------------------------
+# Milvus
+# ------------------------------------------------
+
+ocp4_workload_ai_summit2025_milvus_application_repo: https://github.com/evanshortiss/helm-summit-2025-ai.git
+ocp4_workload_ai_summit2025_milvus_application_repo_tag: main
+ocp4_workload_ai_summit2025_milvus_application_repo_path: milvus
+ocp4_workload_ai_summit2025_milvus_application_name: milvus
+ocp4_workload_ai_summit2025_milvus_application_namespace: openshift-gitops
+ocp4_workload_ai_summit2025_milvus_namespace: milvus
+ocp4_workload_ai_summit2025_milvus_minio_accesskey: minioadmin
+ocp4_workload_ai_summit2025_milvus_minio_secretkey: minioadmin
+ocp4_workload_ai_summit2025_milvus_username: root
+ocp4_workload_ai_summit2025_milvus_password: Milvus
+ocp4_workload_ai_summit2025_milvus_service: vectordb-milvus
+
+# ------------------------------------------------
+# Parasol Application
+# ------------------------------------------------
+
+ocp4_workload_ai_summit2025_parasol_application_repo: https://github.com/evanshortiss/helm-summit-2025-ai.git
+ocp4_workload_ai_summit2025_parasol_application_repo_tag: main
+ocp4_workload_ai_summit2025_parasol_application_repo_path: parasol
+ocp4_workload_ai_summit2025_parasol_application_name: parasol
+ocp4_workload_ai_summit2025_parasol_application_namespace: openshift-gitops
+ocp4_workload_ai_summit2025_parasol_namespace: parasol
+ocp4_workload_ai_summit2025_parasol_db_service: parasol-db
+ocp4_workload_ai_summit2025_parasol_finance_api_service: finance-api
+
+# ------------------------------------------------
+# Parasol AI Application
+# ------------------------------------------------
+
+ocp4_workload_ai_summit2025_parasol_ai_application_repo: https://github.com/evanshortiss/helm-summit-2025-ai.git
+ocp4_workload_ai_summit2025_parasol_ai_application_repo_tag: main
+ocp4_workload_ai_summit2025_parasol_ai_application_repo_path: parasol-ai
+ocp4_workload_ai_summit2025_parasol_ai_application_name: parasol-ai
+ocp4_workload_ai_summit2025_parasol_ai_application_namespace: openshift-gitops
+ocp4_workload_ai_summit2025_parasol_ai_namespace: parasol-ai
+
+ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_model_name: "{{ structured_output_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_api_key: "{{ structured_output_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_base_url: "{{ structured_output_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_router_llm_model_name: "{{ router_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_router_llm_api_key: "{{ router_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_router_llm_base_url: "{{ router_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_finance_llm_model_name: "{{ finance_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_finance_llm_api_key: "{{ finance_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_finance_llm_base_url: "{{ finance_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_support_llm_model_name: "{{ support_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_support_llm_api_key: "{{ support_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_support_llm_base_url: "{{ support_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_support_embedding_model_name: "{{ support_embedding_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_support_embedding_api_key: "{{ support_embedding_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_support_embedding_base_url: "{{ support_embedding_base_url | default(default_llm_base_url, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_support_embedding_set_dimension: "true"
+ocp4_workload_ai_summit2025_parasol_ai_support_milvus_collection: support_openai
+
+ocp4_workload_ai_summit2025_parasol_ai_website_llm_model_name: "{{ website_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_website_llm_api_key: "{{ website_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_website_llm_base_url: "{{ website_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_model_name: "{{ moderation_llm_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_api_key: "{{ moderation_llm_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_base_url: "{{ moderation_llm_base_url | default(default_llm_base_url, true) }}"
+
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_model_name: "{{ document_embedding_model_name | default(default_llm_model_name, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_api_key: "{{ document_embedding_api_key | default(default_llm_api_key, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_base_url: "{{ document_embedding_base_url | default(default_llm_base_url, true) }}"
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_set_dimension: "true"
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_milvus_collection: support_openai
+ocp4_workload_ai_summit2025_parasol_ai_document_embedding_milvus_drop_collection: false
+
+# ------------------------------------------------
+# Red Hat Developer Hub (RHDH)
+# ------------------------------------------------
+
+# RHDH Operator installation
+ocp4_workload_ai_summit2025_rhdh_operator_install: "{{ rhdh_operator_install | default(true) | bool }}"
+ocp4_workload_ai_summit2025_rhdh_operator_channel: fast-1.8
+ocp4_workload_ai_summit2025_rhdh_operator_namespace: rhdh-operator
+ocp4_workload_ai_summit2025_rhdh_operator_name: rhdh
+ocp4_workload_ai_summit2025_rhdh_operator_catalog: redhat-operators
+
+# GitHub authentication and catalog provider configuration
+github_organization: "{{ github_organization | default('', true) }}"
+github_app_id: "{{ github_app_id | default('', true) }}"
+github_client_id: "{{ github_client_id | default('', true) }}"
+github_client_secret: "{{ github_client_secret | default('', true) }}"
+github_private_key_file: "{{ github_private_key_file | default('', true) }}"
+github_private_key: ""

@@ -1,0 +1,120 @@
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: finance-api
+  title: Finance API
+  description: REST API for managing financial records and customer order history
+  tags:
+    - rest
+    - finance
+    - customer-data
+spec:
+  type: openapi
+  lifecycle: production
+  owner: finance-team
+  system: ai-customer-service-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: Finance API
+      version: 1.0.0
+      description: API for retrieving customer financial records
+    paths:
+      /finance/v1/record/{customerId}:
+        get:
+          summary: Get customer financial records
+          parameters:
+            - name: customerId
+              in: path
+              required: true
+              schema:
+                type: string
+          responses:
+            '200':
+              description: Customer financial records
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: website-mcp-api
+  title: Website MCP API
+  description: Model Context Protocol API for website operations including password reset functionality
+  tags:
+    - mcp
+    - website
+    - tools
+spec:
+  type: mcp
+  lifecycle: production
+  owner: website-team
+  system: ai-customer-service-platform
+  definition: |
+    MCP Server for website operations:
+    - Password Reset Tool
+    - Website functionality tools
+    - Account management operations 
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: openai-api
+  title: OpenAI API
+  description: OpenAI's GPT API for AI-powered chat completions, embeddings, and content moderation. Used across multiple AI services for natural language processing and generation.
+  tags:
+    - ai
+    - openai
+    - llm
+    - gpt
+    - external-api
+  annotations:
+    backstage.io/external-url: https://platform.openai.com/docs/api-reference
+spec:
+  type: openapi
+  lifecycle: production
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: OpenAI API
+      version: 1.0.0
+      description: OpenAI API for chat completions, embeddings, and moderation
+    servers:
+      - url: https://api.openai.com/v1
+    paths:
+      /chat/completions:
+        post:
+          summary: Create chat completion
+          description: Creates a model response for the given chat conversation
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    model:
+                      type: string
+                      example: gpt-4
+                    messages:
+                      type: array
+                      items:
+                        type: object
+          responses:
+            '200':
+              description: Successful response
+      /embeddings:
+        post:
+          summary: Create embeddings
+          description: Creates an embedding vector representing the input text
+          responses:
+            '200':
+              description: Embedding created
+      /moderations:
+        post:
+          summary: Create moderation
+          description: Classifies if text violates OpenAI's Content Policy
+          responses:
+            '200':
+              description: Moderation result

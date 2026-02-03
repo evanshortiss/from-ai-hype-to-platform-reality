@@ -1,0 +1,131 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ ocp4_workload_ai_summit2025_parasol_ai_application_name }}
+  namespace: {{ ocp4_workload_ai_summit2025_parasol_ai_application_namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  destination:
+    namespace: {{ ocp4_workload_ai_summit2025_parasol_ai_namespace }}
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    repoURL: {{ ocp4_workload_ai_summit2025_parasol_ai_application_repo }}
+    path: {{ ocp4_workload_ai_summit2025_parasol_ai_application_repo_path }}
+    targetRevision: {{ ocp4_workload_ai_summit2025_parasol_ai_application_repo_tag }}
+    helm:
+      valuesObject:
+
+        kafka-cluster: &kafka
+          bootstrapServer: {{ ocp4_workload_ai_summit2025_amq_streams_broker_name }}-kafka-bootstrap.{{ ocp4_workload_ai_summit2025_amq_streams_broker_namespace }}.svc.cluster.local:9092
+          securityProtocol: {{ ocp4_workload_ai_summit2025_amq_streams_security_protocol }}
+          saslMechanism: {{ ocp4_workload_ai_summit2025_amq_streams_sasl_mechanism }}
+          clientId: {{ ocp4_workload_ai_summit2025_amq_streams_client_id }}
+          clientSecret: {{ ocp4_workload_ai_summit2025_amq_streams_client_secret }}
+
+        customer-support-ui:
+          kafka:
+            <<: *kafka
+        
+        structured-output:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_structured_output_llm_base_url }}
+
+        customer-data:
+          kafka:
+            <<: *kafka
+          datasource:
+            url: {{ ocp4_workload_ai_summit2025_parasol_db_service }}.{{ ocp4_workload_ai_summit2025_parasol_namespace }}.svc.cluster.local:5432
+
+        router:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_router_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_router_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_router_llm_base_url }}
+
+        finance-mcp:
+          rest:
+            finance:
+              url: http://{{ ocp4_workload_ai_summit2025_parasol_finance_api_service }}.{{ ocp4_workload_ai_summit2025_parasol_namespace }}.svc.cluster.local:8080
+
+        finance-ai:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_finance_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_finance_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_finance_llm_base_url }}
+          mcp:
+            finance:
+              url: http://finance-mcp.{{ ocp4_workload_ai_summit2025_parasol_ai_namespace }}.svc.cluster.local:8080/mcp/sse/
+
+        support-ai:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_support_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_support_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_support_llm_base_url }}
+          embedding:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_support_embedding_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_support_embedding_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_support_embedding_base_url }}
+            setDimension: {{ ocp4_workload_ai_summit2025_parasol_ai_support_embedding_set_dimension }}            
+          milvus:
+            url: http://{{ ocp4_workload_ai_summit2025_milvus_service }}.{{ ocp4_workload_ai_summit2025_milvus_namespace }}.svc.cluster.local:19530
+            username: {{ ocp4_workload_ai_summit2025_milvus_username }}
+            password: {{ ocp4_workload_ai_summit2025_milvus_password }}
+            collection: {{ ocp4_workload_ai_summit2025_parasol_ai_support_milvus_collection }}
+        website-ai:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_website_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_website_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_website_llm_base_url }}
+          mcp:
+            website:
+              url: http://website-mcp.{{ ocp4_workload_ai_summit2025_parasol_ai_namespace }}.svc.cluster.local:8080/mcp/sse/
+        moderation:
+          kafka:
+            <<: *kafka
+          llm:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_moderation_llm_base_url }}
+        document-embedding:
+          kafka:
+            <<: *kafka
+          embedding:
+            modelName: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_model_name }}
+            apiKey: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_api_key }}
+            baseUrl: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_base_url }}
+            setDimension: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_set_dimension }}
+          milvus:
+            url: http://{{ ocp4_workload_ai_summit2025_milvus_service }}.{{ ocp4_workload_ai_summit2025_milvus_namespace }}.svc.cluster.local:19530
+            username: {{ ocp4_workload_ai_summit2025_milvus_username }}
+            password: {{ ocp4_workload_ai_summit2025_milvus_password }}
+            collection: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_milvus_collection }}
+            dropCollection: {{ ocp4_workload_ai_summit2025_parasol_ai_document_embedding_milvus_drop_collection }}
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
+      limit: 10
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

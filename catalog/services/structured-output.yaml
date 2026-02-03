@@ -1,0 +1,32 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: structured-output
+  title: Structured Information Extraction Service
+  description: AI-powered service for extracting structured information from unstructured text messages using OpenAI. Processes messages from Kafka and outputs structured data for downstream processing.
+  tags:
+    - java
+    - quarkus
+    - kafka
+    - openai
+    - langchain4j
+    - information-extraction
+    - nlp
+    - ai
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/structured-output
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: ai-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+    - resource:kafka-topic-message
+    - resource:kafka-topic-structured-output
+    - resource:kafka-topic-review
+    - resource:openai-service
+  providesApis: []
+  consumesApis:
+    - api:openai-api 

@@ -1,0 +1,22 @@
+---
+
+- name: Install OpenShift Gitops
+  ansible.builtin.include_tasks: openshift_gitops.yml
+
+- name: Install AMQ Streams
+  ansible.builtin.include_tasks: amq-streams.yml
+
+- name: Install Milvus
+  ansible.builtin.include_tasks: milvus.yml
+
+- name: Install Parasol Application
+  ansible.builtin.include_tasks: parasol.yml
+
+- name: Install Parasol AI application
+  ansible.builtin.include_tasks: parasol_ai.yml
+
+- name: Install Model Registry
+  ansible.builtin.include_tasks: model_registry.yml
+
+- name: Install Red Hat Developer Hub
+  ansible.builtin.include_tasks: rhdh.yml

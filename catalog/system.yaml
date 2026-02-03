@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: ai-customer-service-platform
+  title: AI-Powered Customer Service Platform
+  description: A comprehensive AI-powered customer service platform that provides intelligent message routing, support assistance, financial services, and content moderation through microservices architecture
+  tags:
+    - ai
+    - customer-service
+    - microservices
+    - kafka
+    - langchain4j
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality
+spec:
+  owner: platform-engineering
+  domain: customer-service 

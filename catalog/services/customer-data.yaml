@@ -1,0 +1,28 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: customer-data
+  title: Customer Data Service
+  description: Service for managing customer data with Kafka integration and PostgreSQL persistence. Handles customer information retrieval and data events.
+  tags:
+    - java
+    - quarkus
+    - kafka
+    - postgresql
+    - customer-management
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/customer-data
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: customer-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+    - resource:kafka-topic-message
+    - resource:kafka-topic-customer-data
+    - resource:kafka-topic-review
+    - resource:postgresql-database
+  providesApis: []
+  consumesApis: [] 

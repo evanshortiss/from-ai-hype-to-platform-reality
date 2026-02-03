@@ -1,0 +1,203 @@
+---
+# Input/Intake Topics
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-intake
+  title: Intake Topic
+  description: Entry point for all incoming customer messages before moderation
+  annotations:
+    kafka.io/topic-name: "intake"
+  tags:
+    - kafka
+    - topic
+    - message-intake
+    - entry-point
+spec:
+  type: topic
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-router
+  title: Router Topic
+  description: Messages routed for AI classification and routing decisions
+  annotations:
+    kafka.io/topic-name: "router"
+  tags:
+    - kafka
+    - topic
+    - ai-routing
+spec:
+  type: topic
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-moderated
+  title: Moderated Topic
+  description: Messages that have been moderated and approved for processing
+  annotations:
+    kafka.io/topic-name: "moderated"
+  tags:
+    - kafka
+    - topic
+    - moderation
+    - approved
+spec:
+  type: topic
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-review
+  title: Review Topic
+  description: Messages requiring manual review before processing
+  annotations:
+    kafka.io/topic-name: "review"
+  tags:
+    - kafka
+    - topic
+    - manual-review
+    - quality-control
+spec:
+  type: topic
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+# Routing Output Topics (Router-AI produces)
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-support
+  title: Support Topic
+  description: Support-related messages routed by AI classifier to support team
+  annotations:
+    kafka.io/topic-name: "support"
+  tags:
+    - kafka
+    - topic
+    - support
+    - ai-routing
+spec:
+  type: topic
+  owner: support-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-support-documents
+  title: Support Documents Topic
+  description: Support documentation and knowledge base content for support team reference
+  annotations:
+    kafka.io/topic-name: "support-documents"
+  tags:
+    - kafka
+    - topic
+    - support
+    - documents
+    - knowledge-base
+spec:
+  type: topic
+  owner: support-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-finance
+  title: Finance Topic
+  description: Finance-related messages routed by AI classifier to finance team
+  annotations:
+    kafka.io/topic-name: "finance"
+  tags:
+    - kafka
+    - topic
+    - finance
+    - ai-routing
+spec:
+  type: topic
+  owner: finance-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-website
+  title: Website Topic
+  description: Website-related messages routed by AI classifier to website team
+  annotations:
+    kafka.io/topic-name: "website"
+  tags:
+    - kafka
+    - topic
+    - website
+    - ai-routing
+spec:
+  type: topic
+  owner: website-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+# Processing Output Topics
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-outflow
+  title: Outflow Topic
+  description: Processed responses from AI assistants and moderated content flowing out of the system
+  annotations:
+    kafka.io/topic-name: "outflow"
+  tags:
+    - kafka
+    - topic
+    - ai-responses
+    - output
+spec:
+  type: topic
+  owner: platform-engineering
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: kafka-topic-structured-output
+  title: Structured Output Topic
+  description: Structured information extracted from unstructured messages by AI
+  annotations:
+    kafka.io/topic-name: "structured"
+  tags:
+    - kafka
+    - topic
+    - structured-data
+    - ai-extraction
+spec:
+  type: topic
+  owner: ai-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker

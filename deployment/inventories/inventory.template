@@ -1,0 +1,70 @@
+[all:vars]
+
+# set this to false if the openshift-gitops operator is already installed
+openshift_gitops_operator_install=true
+# set to false if amq streams is already installed
+amq_streams_operator_install=true
+# set to false if the Red Hat Developer Hub operator is already installed
+rhdh_operator_install=true
+
+# RHTAP uses a different ingresss cert name
+openshift_ingress_secret_certs_secret=cert-manager-ingress-cert
+
+# GitHub configuration for RHDH
+# Create a GitHub App following: https://developers.redhat.com/articles/2025/01/07/backstage-authentication-and-catalog-providers-practical-guide
+# IMPORTANT: Fork this repository to your GitHub organization first!
+# GitHub organization where you forked this repository
+# This must match the organization where you created your GitHub App
+# Example: acme-corp (if you forked to https://github.com/acme-corp/from-ai-hype-to-platform-reality)
+github_organization=your-github-org
+github_app_id=123456
+github_client_id=Iv1.abc123def456
+github_client_secret=your-github-app-client-secret
+# Path to the GitHub App private key PEM file
+# Save your GitHub App's private key .pem file and reference it here
+# Can be relative to the playbook directory or an absolute path
+github_private_key_file=github-app-private-key.pem
+
+# default model configuration to use for all services
+default_llm_api_key=
+default_llm_model_name=gpt-4o-mini
+default_llm_base_url=https://api.openai.com/v1
+
+# moderation
+moderation_llm_api_key=
+moderation_llm_model_name=omni-moderation-latest
+moderation_llm_base_url=
+
+# structured_output
+structured_output_llm_api_key=
+structured_output_llm_model_name=
+structured_output_llm_base_url=
+
+# router
+router_llm_api_key=
+router_llm_model_name=
+router_llm_base_url=
+
+# finance
+finance_llm_api_key=
+finance_llm_model_name=
+finance_llm_base_url=
+
+# support
+support_llm_api_key=
+support_llm_model_name=
+support_llm_base_url=
+
+support_embedding_api_key=
+support_embedding_model_name=text-embedding-3-small
+support_embedding_base_url=
+
+# website
+website_llm_api_key=
+website_llm_model_name=
+website_llm_base_url=
+
+# document-embedding
+document_embedding_model_name=text-embedding-3-small
+document_embedding_api_key=
+document_embedding_base_url=

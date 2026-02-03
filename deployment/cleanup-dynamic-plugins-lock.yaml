@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cleanup-dynamic-plugins-lock
+  namespace: ai-rhdh
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      containers:
+        - name: cleanup
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command:
+            - /bin/bash
+            - -c
+            - |
+              echo "Checking for lock file..."
+              if [ -f /dynamic-plugins-root/install-dynamic-plugins.lock ]; then
+                echo "Removing lock file..."
+                rm -f /dynamic-plugins-root/install-dynamic-plugins.lock
+                echo "Lock file removed successfully"
+              else
+                echo "No lock file found"
+              fi
+              echo "Listing contents of /dynamic-plugins-root:"
+              ls -la /dynamic-plugins-root/
+          volumeMounts:
+            - name: dynamic-plugins-root
+              mountPath: /dynamic-plugins-root
+      restartPolicy: Never
+      volumes:
+        - name: dynamic-plugins-root
+          persistentVolumeClaim:
+            claimName: dynamic-plugins-root
+  backoffLimit: 3
+

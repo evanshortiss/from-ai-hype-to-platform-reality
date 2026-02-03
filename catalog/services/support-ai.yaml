@@ -1,0 +1,32 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: support-ai
+  title: Support AI Assistant
+  description: AI-powered support assistant service that provides intelligent customer support using OpenAI and Milvus for context retrieval. Handles support-related customer queries with knowledge base integration.
+  tags:
+    - java
+    - quarkus
+    - kafka
+    - openai
+    - milvus
+    - langchain4j
+    - support
+    - ai
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/support-ai
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: support-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+    - resource:kafka-topic-support
+    - resource:kafka-topic-outflow
+    - resource:kafka-topic-review
+    - resource:openai-service
+    - resource:milvus-vector-database
+  providesApis: []
+  consumesApis: [] 

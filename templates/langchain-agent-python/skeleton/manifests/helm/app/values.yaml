@@ -1,0 +1,106 @@
+# Default values for langchain-agent.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace:
+  enabled: true
+  argocd:
+    name: default
+
+replicaCount: 1
+
+image:
+  pullPolicy: Always
+  registry: ${{values.image_registry}}
+  host: ${{values.image_host}}
+  organization: ${{values.image_organization}}
+  name: ${{values.image_name}}
+  # Overrides the image tag whose default is the chart appVersion.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+route:
+  host: ""
+  path: /
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Application specific configuration
+app:
+  name: ${{values.name}}
+  
+# Environment variables for the application
+env:
+  - name: LOG_LEVEL
+    value: "INFO"
+  - name: SERVICE_NAME
+    value: "${{values.name}}"
+  - name: AI_MODEL
+    value: "${{values.aiModel}}"
+  - name: INFERENCE_SERVER_URL
+    value: "${{values.inferenceServerUrl}}/v1"
+  - name: KAFKA_BROKER
+    value: "kafka-kafka-bootstrap.kafka.svc.cluster.local:9092"
+  - name: KAFKA_SECURITY_PROTOCOL
+    value: "SASL_PLAINTEXT"
+  - name: KAFKA_SASL_MECHANISM
+    value: "SCRAM-SHA-512"
+  - name: KAFKA_SASL_USERNAME
+    value: "parasol"
+  - name: KAFKA_SASL_PASSWORD
+    value: "parasol"
+  - name: CONSUMER_GROUP
+    value: "${{values.consumerGroup}}"
+  - name: MONITORED_TOPIC
+    value: "${{values.kafkaTopicName}}"
+  - name: NOTIFICATION_RECIPIENT_ENTITY
+    value: "${{values.catalog_owner}}"
+  - name: BACKSTAGE_TOKEN
+    value: "jHYtxs7CavUaxoI+Rm+Ri6dZm8vf76vp"

@@ -1,0 +1,25 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: website-mcp
+  title: Website MCP Server
+  description: Model Context Protocol (MCP) server for website operations. Provides structured tools and context for password reset and other website-related operations to AI services.
+  tags:
+    - java
+    - quarkus
+    - mcp
+    - website
+    - tools
+    - protocol-server
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/website-mcp
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: website-team
+  system: ai-customer-service-platform
+  dependsOn: []
+  providesApis:
+    - website-mcp-api
+  consumesApis: [] 

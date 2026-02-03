@@ -1,0 +1,30 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ ocp4_workload_ai_summit2025_parasol_application_name }}
+  namespace: {{ ocp4_workload_ai_summit2025_parasol_application_namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io/foreground
+spec:
+  destination:
+    namespace: {{ ocp4_workload_ai_summit2025_parasol_namespace }}
+    server: 'https://kubernetes.default.svc'
+  project: default
+  source:
+    repoURL: {{ ocp4_workload_ai_summit2025_parasol_application_repo }}
+    path: {{ ocp4_workload_ai_summit2025_parasol_application_repo_path }}
+    targetRevision: {{ ocp4_workload_ai_summit2025_parasol_application_repo_tag }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m0s
+      limit: 10
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

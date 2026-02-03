@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: Location
+metadata:
+  name: ai-customer-service-platform
+  description: AI-Powered Customer Service Platform Components
+spec:
+  targets:
+    - ./domain.yaml
+    - ./system.yaml
+    - ./resources.yaml
+    - ./kafka-topics.yaml
+    - ./apis.yaml
+    - ./services/customer-data.yaml
+    - ./services/document-embedding.yaml
+    - ./services/finance-ai.yaml
+    - ./services/finance-api.yaml
+    - ./services/moderation.yaml
+    - ./services/router-ai.yaml
+    - ./services/structured-output.yaml
+    - ./services/support-ai.yaml
+    - ./services/website-ai.yaml
+    - ./services/website-mcp.yaml 
+    - ./services/customer-support-ui.yaml 

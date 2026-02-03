@@ -1,0 +1,115 @@
+apiVersion: rhdh.redhat.com/v1alpha4
+kind: Backstage
+metadata:
+  name: developer-hub
+  namespace: ai-rhdh
+  labels:
+    app.kubernetes.io/name: backstage
+spec:
+  application:
+    appConfig:
+      configMaps:
+        - name: rhdh-app-config
+      mountPath: /opt/app-root/src
+    dynamicPluginsConfigMapName: dynamic-plugins-rhdh
+    extraEnvs:
+      envs:
+        - name: NODE_TLS_REJECT_UNAUTHORIZED
+          value: "0"
+      secrets:
+        - name: rhdh-argocd-credentials
+        - name: kubernetes-sa-token
+    extraFiles:
+      mountPath: /opt/app-root/src
+    replicas: 1
+    route:
+      enabled: true
+  database:
+    enableLocalDb: true
+  deployment:
+    patch:
+      spec:
+        template:
+          spec:
+            containers:
+              - env:
+                  - name: NORMALIZER_FORMAT
+                    value: JsonArrayFormat
+                  - name: POD_IP
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: POD_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                envFrom:
+                  - secretRef:
+                      name: rhdh-rhoai-connector-token
+                image: quay.io/redhat-ai-dev/model-catalog-location-service@sha256:763311530fb842a1366447e661ca22563e6ef22505d993716aea350bbbfae9a0
+                imagePullPolicy: Always
+                name: location
+                ports:
+                  - containerPort: 9090
+                    name: location
+                    protocol: TCP
+                volumeMounts:
+                  - mountPath: /opt/app-root/src/dynamic-plugins-root
+                    name: dynamic-plugins-root
+                workingDir: /opt/app-root/src
+              - env:
+                  - name: NORMALIZER_FORMAT
+                    value: JsonArrayFormat
+                  - name: STORAGE_TYPE
+                    value: ConfigMap
+                  - name: BRIDGE_URL
+                    value: http://localhost:9090
+                  - name: POD_IP
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: POD_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                envFrom:
+                  - secretRef:
+                      name: rhdh-rhoai-connector-token
+                image: quay.io/redhat-ai-dev/model-catalog-storage-rest@sha256:398095e7469e86d84b1196371286363f4b7668aa3e26370b4d78cb8d4ace1dc9
+                imagePullPolicy: Always
+                name: storage-rest
+                volumeMounts:
+                  - mountPath: /opt/app-root/src/dynamic-plugins-root
+                    name: dynamic-plugins-root
+                workingDir: /opt/app-root/src
+              - args:
+                  - --metrics-address=:8081
+                env:
+                  - name: NORMALIZER_FORMAT
+                    value: JsonArrayFormat
+                  - name: POD_IP
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: status.podIP
+                  - name: POD_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                envFrom:
+                  - secretRef:
+                      name: rhdh-rhoai-connector-token
+                image: quay.io/redhat-ai-dev/model-catalog-rhoai-normalizer@sha256:fe6c05d57495d6217c4d584940ec552c3727847ff60f39f5d04f94be024576d8
+                imagePullPolicy: Always
+                name: rhoai-normalizer
+                volumeMounts:
+                  - mountPath: /opt/app-root/src/dynamic-plugins-root
+                    name: dynamic-plugins-root
+                workingDir: /opt/app-root/src
+            volumes:
+              - $patch: replace
+                name: dynamic-plugins-root
+                persistentVolumeClaim:
+                  claimName: dynamic-plugins-root
+  monitoring:
+    enabled: false
+

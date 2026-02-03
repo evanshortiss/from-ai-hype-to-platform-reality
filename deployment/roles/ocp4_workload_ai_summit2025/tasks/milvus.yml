@@ -1,0 +1,15 @@
+---
+
+- name: Deploy Milvus instance
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'milvus/milvus-application.yml.j2') | from_yaml }}"
+  retries: 10
+  delay: 30
+  ignore_errors: true
+  register: milvus_app_result
+  until: milvus_app_result is not failed
+
+- name: Print parasol_app_result from the previous task
+  ansible.builtin.debug:
+    var: parasol_app_result

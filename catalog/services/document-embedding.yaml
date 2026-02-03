@@ -1,0 +1,30 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: document-embedding
+  title: Document Embedding Service
+  description: Service for generating and storing document embeddings using LangChain4j and Milvus vector database. Processes documents from Kafka and stores embeddings for similarity search.
+  tags:
+    - java
+    - quarkus
+    - kafka
+    - milvus
+    - langchain4j
+    - embeddings
+    - ai
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/document-embedding
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: ai-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:kafka-message-broker
+    - resource:kafka-topic-support-documents
+    - resource:milvus-vector-database
+    - resource:openai-service
+  providesApis: []
+  consumesApis:
+    - api:openai-api 

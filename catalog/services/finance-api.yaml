@@ -1,0 +1,25 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: finance-api
+  title: Finance API Service
+  description: REST API service for financial records management. Provides endpoints for retrieving customer financial data and order history stored in PostgreSQL.
+  tags:
+    - java
+    - quarkus
+    - rest-api
+    - postgresql
+    - finance
+  annotations:
+    backstage.io/source-location: url:https://github.com/evanshortiss/from-ai-hype-to-platform-reality/finance-api
+    quarkus.io/profile: jvm
+spec:
+  type: service
+  lifecycle: production
+  owner: finance-team
+  system: ai-customer-service-platform
+  dependsOn:
+    - resource:postgresql-database
+  providesApis:
+    - finance-api
+  consumesApis: [] 

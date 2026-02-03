@@ -1,0 +1,28 @@
+apiVersion: modelregistry.opendatahub.io/v1beta1
+kind: ModelRegistry
+metadata:
+  name: my-registry
+  namespace: rhoai-model-registries
+  annotations:
+    openshift.io/description: ""
+    openshift.io/display-name: my-registry
+spec:
+  grpc:
+    port: 9090
+  kubeRBACProxy:
+    port: 8443
+    routePort: 443
+    serviceRoute: enabled
+  mysql:
+    database: model_registry
+    host: model-registry-db.model-registry-db.svc.cluster.local
+    passwordSecret:
+      key: database-password
+      name: my-registry-db-secret
+    port: 3306
+    skipDBCreation: false
+    username: mlmduser
+  rest:
+    port: 8080
+    serviceRoute: disabled
+
