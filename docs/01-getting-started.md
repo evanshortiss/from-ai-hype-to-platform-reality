@@ -1,6 +1,6 @@
 # Getting Started Guide
 
-This guide walks you through preparing your environment to deploy the Red Hat One demonstration platform. While this seems like a lot of steps upfront, the good news is you can reuse the GitHub Org again, and again, and again - it's a one time task.
+This guide walks you through preparing your environment to deploy the Red Hat One demo. While this seems like a lot of steps upfront, the good news is you can reuse the GitHub Org again, and again, and again - it's a one time task.
 
 Once all prerequisites are in place, proceed to the [Deployment Guide](02-deployment-guide.md) to configure and deploy the platform.
 
