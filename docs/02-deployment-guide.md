@@ -144,7 +144,4 @@ Access Developer Hub in your browser:
 > [!NOTE]
 > You cannot login yet, you need to set the redirect URL for your GitHub App. That URL was printed in the Ansible output!
 
-```bash
-# Get the RHDH route
-oc get route -n ai-rhdh'
-```
+
